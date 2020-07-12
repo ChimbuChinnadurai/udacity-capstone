@@ -16,6 +16,14 @@ The cloudformation folder contains the templates i used to launch an EKS cluster
 
 #
 
+I have used jenkins for CI/CD and the pipeline code avaiable in the Jenkinsfile
+
+The docker container is stored my public docker container repo simbu1290/capstone
+
+As part of the deployment the image is deployed to the kubernetes cluster
+
+#
+
 The tests folder contains the screenshots of the tests i have manually done for this project. 
 
 I have used rolling deployment strategy in this project and it can be verified in the screenshots .
