@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'aws-deploy-slave'
-    }
+    agent any
     
     parameters {
       string defaultValue: '', description: 'Version to be build deployed', name: 'VERSION', trim: true       
@@ -13,6 +11,14 @@ pipeline {
                 script {
                  	deleteDir()
                  	sh "git clone https://github.com/ChimbuChinnadurai/udacity-capstone.git"
+                }
+            }
+        }
+        stage("Lint Dockerfile") {
+            steps {
+                script {
+                    echo "lint dockrfile"
+                 	//sh "hadolint ./udacity-capstone/hello-app/Dockerfile"
                 }
             }
         }
