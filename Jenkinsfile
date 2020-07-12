@@ -17,8 +17,7 @@ pipeline {
         stage("Lint Dockerfile") {
             steps {
                 script {
-                    echo "lint dockrfile"
-                 	//sh "hadolint ./udacity-capstone/hello-app/Dockerfile"
+                 	sh "hadolint ./udacity-capstone/hello-app/Dockerfile"
                 }
             }
         }
@@ -30,7 +29,22 @@ pipeline {
                  			sh '''
                     			cd ./udacity-capstone/hello-app/
                     			docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}
-                 				./run_docker_build_push.sh $$highVersion
+                 				./run_docker_build_push.sh $VERSION
+                 			'''
+             			}
+         			}
+                }
+            }
+        }
+        stage("Deploy App to K8S") {
+            steps {
+                script {
+                	withAwsCli(credentialsId: "aws-access-sandbox", defaultRegion: "eu-west-1") {
+                		withEnv(["VERSION=${VERSION}"]){
+                 			sh '''
+                 			    cd ./udacity-capstone/hello-app/
+                 			    aws eks update-kubeconfig --name chimbu-sandbox-eks
+                 				helm upgrade --install capstone ./charts/capstone --namespace capstone --values ./charts/capstone/values.yaml --set deployment.image.repository=simbu1290/capstone --set deployment.image.tag=$VERSION --debug
                  			'''
              			}
          			}
