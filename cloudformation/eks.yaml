@@ -116,7 +116,7 @@ Resources:
   EKSCluster:
     Type: AWS::EKS::Cluster
     Properties:
-      Name: !Sub ${Organisation}-${Project}-${Env}-eks
+      Name: chimbu-sandbox-eks
       RoleArn: !GetAtt EKSServiceRole.Arn
       ResourcesVpcConfig:
         SecurityGroupIds:
