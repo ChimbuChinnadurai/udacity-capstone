@@ -16,4 +16,4 @@ docker build -t $dockerpath .
 # Step 3:
 # Push image to a docker repository
 
-docker push $dockerpath
+docker push $appversion
