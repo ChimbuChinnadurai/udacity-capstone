@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
 
-Description: Waitrose CloudFormation Template for AWS EKS Node Group
+Description:  CloudFormation Template for AWS EKS Node Group
 
 Parameters:
   Env:
@@ -46,8 +46,9 @@ Parameters:
   ClusterName:
     Description: The cluster name provided when the cluster was created. If it is incorrect, nodes will not be able to join the cluster.
     Type: String
+    Default: chimbu-sandbox-eks
 
-  VpcName:
+  VpcId:
     Description: The VPC Name of the worker instances
     Type: String
 
@@ -63,7 +64,7 @@ Parameters:
   PrivateSubnet:
     Description: CIDR of the private subnet
     Type: String
-    
+
 Resources:
   NodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
