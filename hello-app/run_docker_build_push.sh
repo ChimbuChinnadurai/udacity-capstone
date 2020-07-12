@@ -6,7 +6,7 @@
 # Create dockerpath
 # appversion=<your docker ID/path>
 
-appversion=simbu1290/mlapp:${VERSION}
+appversion=simbu1290/capstone:$VERSION
 
 # Step 2:
 # Build image and add a descriptive tag
