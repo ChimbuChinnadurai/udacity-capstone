@@ -6,7 +6,7 @@
 # Create dockerpath
 # appversion=<your docker ID/path>
 
-appversion=simbu1290/capstone:$VERSION
+appversion=simbu1290/capstone:1.0.0
 
 # Step 2:
 # Build image and add a descriptive tag
