@@ -1,0 +1,195 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: CloudFormation Template for AWS EKS Cluster
+
+Parameters:
+  Organisation:
+    Description: Organisation for Cost Allocation i.e. ecom
+    Type: String
+    Default: ecom
+
+  Project:
+    Description: Organisation Project Name 
+    Type: String
+    Default: su
+
+  Env:
+    Description: Environment for the Stack
+    Type: String
+    Default: sandbox
+
+  VpcId:
+    Description: The VPC Name of the worker instances
+    Type: String
+    Default: vpc-1cbef174
+  
+  publicSubnet:
+    Type: Description: This is the subnet where the bastion host will be launched
+    Type: AWS::EC2::Subnet::Id
+
+  PublicSubnetCidrIp:
+    Description: CIDR of the private subnet
+    Type: String
+
+  PrivateSubnet:
+    Description: CIDR of the private subnet
+    Type: String
+
+  PrivateSubnetCidrIp:
+    Description: CIDR of the private subnet
+    Type: String
+
+  Version:
+    Description: The Kubernetes deployed version
+    Type: String
+    AllowedValues:
+      - '1.13'
+      - '1.14'
+      - '1.15'
+
+Resources:
+  EKSNodeInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+        - !Ref EKSNodeASGPolicy
+
+  EKSNodeASGPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Path: /
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - autoscaling:DescribeAutoScalingGroups
+              - autoscaling:DescribeAutoScalingInstances
+              - autoscaling:DescribeTags
+              - autoscaling:SetDesiredCapacity
+              - autoscaling:TerminateInstanceInAutoScalingGroup
+            Resource: '*'
+
+  EKSServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+      Path: /
+
+  EKSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub ${Organisation}-${Project}-${Env}-EKSSecurityGroup
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Sub ${Organisation}-${Project}-${Env}-EKSSecurityGroup
+        - Key: Env
+          Value: !Ref Env
+
+  EKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Sub ${Organisation}-${Project}-${Env}-eks
+      RoleArn: !GetAtt EKSServiceRole.Arn
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+          - !GetAtt EKSSecurityGroup.GroupId
+        SubnetIds:
+          - !Ref publicSubnet
+          - !Ref PrivateSubnet
+      Version: !Ref Version
+
+  NodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for all nodes in the cluster
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Sub ${Organisation}-${Project}-${Env}-EKSNodeCommonSecurityGroup
+      SecurityGroupIngress:
+        - Description: Allow SSH From Jumphost
+          IpProtocol: tcp
+          CidrIp: !Ref PublicSubnetCidrIp
+          FromPort: 22
+          ToPort: 22
+
+  NodeSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow node to communicate with each other
+      GroupId: !Ref NodeSecurityGroup
+      SourceSecurityGroupId: !Ref NodeSecurityGroup
+      IpProtocol: '-1'
+      FromPort: 0
+      ToPort: 65535
+
+Outputs:
+  ClusterArn:
+    Description: The ARN of the cluster
+    Value: !GetAtt EKSCluster.Arn
+
+  ClusterName:
+    Description: The Name of the cluster
+    Value: !Ref EKSCluster
+    Export:
+      Name: !Sub chimbu-${Env}-eks
+
+  CertificateAuthorityData:
+    Description: The certificate-authority-data for your cluster.
+    Value: !GetAtt EKSCluster.CertificateAuthorityData
+
+  Endpoint:
+    Description: The endpoint for your Kubernetes API server.
+    Value: !GetAtt EKSCluster.Endpoint
+
+  EKSSecurityGroup:
+    Description: Security group for the cluster control plane communication with worker nodes
+    Value: !Join [ ",", [ !Ref EKSSecurityGroup ] ]
+    Export:
+      Name: !Sub chimbu-${Env}-eks-security-group
+
+  EKSNodeSecurityGroup:
+    Description: Security group for the All EKS worker nodes
+    Value: !Join [ ",", [ !Ref NodeSecurityGroup ] ]
+    Export:
+      Name: !Sub chimbu-${Env}-eks-node-security-group
+
+  EKSNodeInstanceRoleArn:
+    Description: The node instance role Arn
+    Value: !GetAtt EKSNodeInstanceRole.Arn
+    Export:
+      Name: !Sub chimbu-${Env}-eks-node-instance-role-arn
+
+  EKSNodeInstanceRoleName:
+    Description: The node instance role
+    Value: !Ref EKSNodeInstanceRole
+    Export:
+      Name: !Sub chimbu-${Env}-eks-node-instance-role
