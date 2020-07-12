@@ -10,4 +10,4 @@ docker build -t simbu1290/capstone:1.0.0 .
 # Step 2:
 # Push image to a docker repository
 
-docker push $appversion
+docker push simbu1290/capstone:1.0.0
